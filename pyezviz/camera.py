@@ -62,6 +62,17 @@ class EzvizCamera:
 
         return "0.0.0.0"
 
+    def _mac_address(self) -> Any:
+        """Fix empty mac address value for certain cameras."""
+        if self.fetch_key(["deviceInfos", "mac"]):
+            return self.fetch_key(["deviceInfos", "mac"])
+
+        _super_device_serial = self.fetch_key(["resourceInfos", 0, "superDeviceSerial"])
+
+        if _super_device_serial:
+            _super_device = self._client.get_device_infos(_super_device_serial)
+            return fetch_nested_value(_super_device, ["deviceInfos", "mac"])
+
     def _motion_trigger(self) -> None:
         """Create motion sensor based on last alarm time."""
         if not self._last_alarm.get("alarmStartTimeStr"):
@@ -122,7 +133,7 @@ class EzvizCamera:
             "encrypted_pwd_hash": self.fetch_key(["STATUS", "encryptPwd"]),
             "local_ip": self._local_ip(),
             "wan_ip": self.fetch_key(["CONNECTION", "netIp"]),
-            "mac_address": self.fetch_key(["deviceInfos", "mac"]),
+            "mac_address": self._mac_address(),
             "local_rtsp_port": self.fetch_key(["CONNECTION", "localRtspPort"], "554")
             if self.fetch_key(["CONNECTION", "localRtspPort"], "554") != 0
             else "554",
